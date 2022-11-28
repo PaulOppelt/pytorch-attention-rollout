@@ -21,12 +21,12 @@ class WrapperEncoderLayer(TransformerEncoderLayer):
         self.weight_attn = []
         self.gradients = []
 
-        
     def _sa_block(self, x: Tensor,
                   attn_mask: typing.Optional[Tensor],
                   key_padding_mask: typing.Optional[Tensor])-> Tensor:
         """refined _sa_block method to save the attention weights and gradients. We reimplement the attention calculation such
-        that we can trace the weihts and their corresponding gradients. """
+        that we can trace the weihts and their corresponding gradients. This method returns the same ouput as the method from the pytorch
+        implementation."""
         
         # define some parameters
         sql, bsz, d_model = x.shape
