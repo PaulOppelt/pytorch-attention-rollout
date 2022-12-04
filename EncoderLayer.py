@@ -3,6 +3,7 @@ from torch.nn import TransformerEncoderLayer
 from torch import Tensor
 import typing
 import math
+import torch.nn.functional as F
 
 class WrapperEncoderLayer(TransformerEncoderLayer):
     r"""class to modify the transformer encoder layer such, that we have access to the
