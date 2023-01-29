@@ -2,35 +2,36 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# implement attention rollout.
-def _compute_attention_rollout(model, input_batch, segments_batch, device):
+
+class rollout:
+    def __init__(self, model, device):
+        self.model = model
+        self.device = device
+        self.nheads = model.bert.transformer_encoder.num_attention_heads
+
+
+    def model_forward(self, input_batch, segments_batch):
         """Compute the attention rollout for the given input batch."""
 
         # calculate a forward pass to get the attention weights
-        model.zero_grad()
-        input_batch[input_batch == 0] = 1 # replace unknown tokens with padding
+        self.model.zero_grad()
+        input_batch[input_batch == 0] = 1
 
-        out = model(input_batch, segments_batch)
-
-        # calculate the loss. How do the label probabilities change with the attention weights. 
-        mask = torch.zeros(out.shape).to(device)
+        out = self.model(input_batch, segments_batch)
+        mask = torch.zeros(out.shape).to(self.device)
         mask[:,1] = 1
         loss = (mask*out).sum()
         loss.backward()
-        
-        # get input dimensions
-        bsz = input_batch.shape[0]
-        seq_lenght = 128 #self.pretrained_model.window_size * self.pretrained_model.n_domains_incl
-        nheads = 16#self.pretrained_model.bert.transformer_encoder.layers[0].self_attn.num_heads
 
-        # compute the attention rollout without tracking the gradients of the computations.
+
+    def compute_attention_rollout(self, bsz, seq_lenght):
         with torch.no_grad():
             #rollout = torch.eye(seq_lenght)  init rollout is the identity martix. this models the residual connection.
-            result = torch.eye(seq_lenght).to(device) # init rollout is the identity martix. this models the residual connection.
-            for layer in model.bert.transformer_encoder.layers:
+            result = torch.eye(seq_lenght).to(self.device) # init rollout is the identity martix. this models the residual connection.
+            for layer in self.model.bert.transformer_encoder.layers:
                 # fetch attention weights and their gradients w.r.t the class loss.
-                gradient = layer.gradients[-1].view(bsz, nheads, seq_lenght, seq_lenght)
-                attention = layer.weight_attn[-1].view(bsz, nheads, seq_lenght, seq_lenght)
+                gradient = layer.gradients[-1].view(bsz, self.nheads, seq_lenght, seq_lenght)
+                attention = layer.weight_attn[-1].view(bsz, self.nheads, seq_lenght, seq_lenght)
                 # get the maximum elements across the attention heads.
                 inter_ = torch.max(gradient*attention, dim=1)[0] 
                 # apply relu activation in order to have only positive values.)
@@ -51,3 +52,6 @@ def _compute_attention_rollout(model, input_batch, segments_batch, device):
             token_att = result @ torch.ones(seq_lenght)
 
         return token_att
+
+
+
