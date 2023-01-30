@@ -6,6 +6,7 @@ import torch.nn.functional as F
 class rollout:
     def __init__(self, model, device):
         self.model = model
+        self.layers = self.model.bert.transformer_encoder.layers
         self.device = device
         self.nheads = model.bert.transformer_encoder.num_attention_heads
 
@@ -28,7 +29,7 @@ class rollout:
         with torch.no_grad():
             #rollout = torch.eye(seq_lenght)  init rollout is the identity martix. this models the residual connection.
             result = torch.eye(seq_lenght).to(self.device) # init rollout is the identity martix. this models the residual connection.
-            for layer in self.model.bert.transformer_encoder.layers:
+            for layer in self.layers:
                 # fetch attention weights and their gradients w.r.t the class loss.
                 gradient = layer.gradients[-1].view(bsz, self.nheads, seq_lenght, seq_lenght)
                 attention = layer.weight_attn[-1].view(bsz, self.nheads, seq_lenght, seq_lenght)
