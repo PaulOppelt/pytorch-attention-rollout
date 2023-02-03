@@ -1,1 +1,1 @@
-Create a custom TransformerEncoderLayer that has the same functionality as the pytorch-version but stores the attention matrices and their corresponding gradients.
+Create a custom TransformerEncoderLayer that has the same functionality as the pytorch-version but stores the attention matrices and their corresponding gradients. calculae the attention rollout by multiplying the attention matrices with their gradiends toward class
